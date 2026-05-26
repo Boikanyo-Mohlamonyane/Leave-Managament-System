@@ -26,12 +26,10 @@ public class LeaveService {
     @Autowired
     private LeaveTypeRepository leaveTypeRepository;
 
-    // =========================
-    // APPLY LEAVE (FIXED + SAFE)
-    // =========================
+
+
     public LeaveResponse applyLeave(LeaveRequest request) {
 
-        // VALIDATION (PREVENT NULL ERROR)
         if (request.getUserId() == null) {
             throw new RuntimeException("UserId cannot be null");
         }
@@ -44,15 +42,11 @@ public class LeaveService {
             throw new RuntimeException("StartDate and EndDate are required");
         }
 
-        // 1. Find User
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 2. Find Leave Type
         LeaveType leaveType = leaveTypeRepository.findById(request.getLeaveTypeId())
                 .orElseThrow(() -> new RuntimeException("Leave type not found"));
-
-        // 3. Create Leave Application
         LeaveApplication leave = LeaveApplication.builder()
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
@@ -63,15 +57,10 @@ public class LeaveService {
                 .leaveType(leaveType)
                 .build();
 
-        // 4. Save
         LeaveApplication saved = leaveApplicationRepository.save(leave);
 
         return mapToResponse(saved);
     }
-
-    // =========================
-    // APPROVE LEAVE (FIXED)
-    // =========================
     public String approveLeave(Long approverId, Long leaveId) {
 
         if (approverId == null || leaveId == null) {
@@ -94,10 +83,6 @@ public class LeaveService {
 
         return "Leave with ID " + leave.getLeaveId() + " has been APPROVED";
     }
-
-    // =========================
-    // REJECT LEAVE (FIXED)
-    // =========================
     public String rejectLeave(Long approverId, Long leaveId) {
 
         if (approverId == null || leaveId == null) {
@@ -121,9 +106,6 @@ public class LeaveService {
         return "Leave with ID " + leave.getLeaveId() + " has been REJECTED";
     }
 
-    // =========================
-    // MAP ENTITY → DTO
-    // =========================
     private LeaveResponse mapToResponse(LeaveApplication leave) {
 
         return LeaveResponse.builder()
@@ -141,5 +123,14 @@ public class LeaveService {
                 .leaveTypeName(leave.getLeaveType().getTypeName())
 
                 .build();
+    }
+
+    public int calculateRemainingLeave(int total, int used) {
+
+        if (used > total) {
+            throw new IllegalArgumentException("Used leave cannot exceed total leave");
+        }
+
+        return total - used;
     }
 }
